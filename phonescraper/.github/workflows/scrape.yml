@@ -1,0 +1,36 @@
+name: Scheduled Scrapy Spider
+
+on:
+  schedule:
+    - cron: "0 0 * * *"  # Runs every day at 12 AM UTC
+  workflow_dispatch:  # Allows manual trigger
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set Up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+
+      - name: Install Dependencies
+        run: pip install scrapy
+
+      - name: Run Scrapy Spider
+        run: scrapy crawl phonespider -O scraped_data.json
+        working-directory: phonescraper  # ✅ Corrected path
+
+      - name: Commit & Push Scraped Data
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "Updated scraped data" || echo "No changes to commit"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

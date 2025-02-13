@@ -69,6 +69,7 @@ DOWNLOADER_MIDDLEWARES = {
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
    "phonescraper.pipelines.PhonescraperPipeline": 300,
+   "phonescraper.pipelines.MongoPipeline": 400,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)

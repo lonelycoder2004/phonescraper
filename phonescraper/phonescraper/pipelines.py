@@ -1,16 +1,32 @@
 from itemadapter import ItemAdapter
 import re
+import pymongo
 from scrapy.exceptions import DropItem
 
 class PhonescraperPipeline:
+    def __init__(self):
+        self.seen_names = set()  # To track unique phone names
+
     def process_item(self, item, spider):
         adapter = ItemAdapter(item)
-        
+
         # Remove phones missing any required fields
         required_fields = ["name", "price", "specifications"]
         for field in required_fields:
             if not adapter.get(field):  # Skip if any required field is missing
                 raise DropItem(f"Missing required field: {field} in {item}")
+
+        # Clean and format the name field (remove bracketed part)
+        name = adapter.get("name")
+        if name:
+            name = re.sub(r"\s*\(.*?\)", "", name).strip()  # Remove color variations in brackets
+            adapter["name"] = name
+
+            # Check if this name has already been seen
+            if name in self.seen_names:
+                raise DropItem(f"Duplicate phone name found: {name}, ignoring.")
+            else:
+                self.seen_names.add(name)  # Add new name to the set
 
         # Check that all required specifications are present
         required_specs = [
@@ -45,13 +61,7 @@ class PhonescraperPipeline:
         else:
             raise DropItem(f"Missing specifications in {item}")
 
-        # Clean and format the name field (remove bracketed part)
-        name = adapter.get("name")
-        if name:
-            name = re.sub(r"\s*\(.*?\)", "", name).strip()
-            adapter["name"] = name
-        
-        # Format price field (add ₹ symbol and ensure numeric value)
+        # Format price field (keep only digits)
         price = adapter.get("price")
         if price:
             price = re.sub(r"[^\d]", "", price)  # Keep only digits
@@ -62,5 +72,35 @@ class PhonescraperPipeline:
         if image:
             adapter["image"] = image.strip()
 
+        return item
+
+
+class MongoPipeline:
+    def __init__(self):
+        # Get MongoDB URI from environment variable
+        self.mongo_uri = "mongodb+srv://ashikshaji:%40Cl8547933472@cluster0.7qopb.mongodb.net/scraping?retryWrites=true&w=majority"  
+       
+        
+        self.mongo_db = "scraping"  # Database name
+        self.collection_name = "phonescraper"  # Collection name
+
+    def open_spider(self, spider):
+        """Open MongoDB Atlas connection and clear existing data"""
+        self.client = pymongo.MongoClient(self.mongo_uri)
+        self.db = self.client[self.mongo_db]
+        self.collection = self.db[self.collection_name]
+
+        # Delete all existing records before inserting new ones
+        self.collection.delete_many({})
+        spider.logger.info("Cleared existing data in MongoDB Atlas.")
+
+    def close_spider(self, spider):
+        """Close MongoDB connection"""
+        self.client.close()
+
+    def process_item(self, item, spider):
+        """Insert the scraped item into MongoDB Atlas"""
+        self.collection.insert_one(dict(item))  # Directly insert the cleaned item
+        spider.logger.info(f"Inserted item: {item['name']}")
         return item
 
