@@ -19,7 +19,9 @@ jobs:
           python-version: "3.9"
 
       - name: Install Dependencies
-        run: pip install scrapy
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
       - name: Run Scrapy Spider
         run: scrapy crawl phonespider -O scraped_data.json
