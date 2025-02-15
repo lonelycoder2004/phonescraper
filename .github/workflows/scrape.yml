@@ -20,8 +20,7 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r require.txt
+          pip install scrapy pymongo requests 
         working-directory: phonescraper  # Ensuring correct working directory
 
       - name: Run Scrapy Spider
