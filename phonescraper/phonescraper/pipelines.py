@@ -2,6 +2,7 @@ from itemadapter import ItemAdapter
 import re
 import pymongo
 from scrapy.exceptions import DropItem
+import os
 
 class PhonescraperPipeline:
     def __init__(self):
@@ -78,7 +79,7 @@ class PhonescraperPipeline:
 class MongoPipeline:
     def __init__(self):
         # Get MongoDB URI from environment variable
-        self.mongo_uri = "mongodb+srv://ashikshaji:%40Cl8547933472@cluster0.7qopb.mongodb.net/scraping?retryWrites=true&w=majority"  
+        self.mongo_uri = os.getenv("MONGO_URI")
        
         
         self.mongo_db = "scraping"  # Database name
