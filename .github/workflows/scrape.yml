@@ -28,7 +28,7 @@ jobs:
         env:
           MONGO_URI: ${{ secrets.MONGO_URI }}  # Use GitHub Secret for MongoDB
         run: scrapy crawl phonespider -O scraped_data.json
-        working-directory: phonescraper  # Correct path for Scrapy execution
+        working-directory: phonescraper/phonescraper  # Correct path for Scrapy execution
 
       - name: Commit & Push Scraped Data
         run: |
