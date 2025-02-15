@@ -21,7 +21,7 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r phonescraper/requirements.txt
+          pip install -r requirements.txt
         working-directory: phonescraper  # Ensuring correct working directory
 
       - name: Run Scrapy Spider
