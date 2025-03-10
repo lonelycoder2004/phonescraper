@@ -17,10 +17,17 @@ class PhonescraperPipeline:
             if not adapter.get(field):  # Skip if any required field is missing
                 raise DropItem(f"Missing required field: {field} in {item}")
 
-        # Clean and format the name field (remove bracketed part)
+        # Clean and format the name field (remove color and storage details for iPhones)
         name = adapter.get("name")
         if name:
-            name = re.sub(r"\s*\(.*?\)", "", name).strip()  # Remove color variations in brackets
+            if "iPhone" in name:
+                # Remove storage and color details from the name
+                name = re.sub(r"\d+GB\s*", "", name)  # Remove storage (e.g., 128GB)
+                name = re.sub(r"\s*(Black|Blue|Natural Titanium|Red|Green|etc\.?)\s*", "", name, flags=re.IGNORECASE)  # Remove colors
+                name = name.strip()
+            else:
+                # For non-iPhones, just remove bracketed parts
+                name = re.sub(r"\s*\(.*?\)", "", name).strip()
             adapter["name"] = name
 
             # Check if this name has already been seen
@@ -55,9 +62,17 @@ class PhonescraperPipeline:
                 if key == 'Primary Camera' or key == 'Secondary Camera':
                     value = re.sub(r'Features?.*', '', value).strip()
 
+                # Simplify processor name if it starts with "Snapdragon"
+                if key == 'Processor' and value.startswith("Snapdragon"):
+                    value = "Snapdragon"
+
                 if key in required_specs:
                     cleaned_specs[key] = value
             
+            # Explicitly set RAM to 4GB for iPhones
+            if "iPhone" in name and 'RAM' in cleaned_specs:
+                cleaned_specs['RAM'] = "4 GB"
+
             adapter["specifications"] = cleaned_specs
         else:
             raise DropItem(f"Missing specifications in {item}")
@@ -80,8 +95,6 @@ class MongoPipeline:
     def __init__(self):
         # Get MongoDB URI from environment variable
         self.mongo_uri = os.getenv("MONGO_URI")
-       
-        
         self.mongo_db = "scraping"  # Database name
         self.collection_name = "phonescraper"  # Collection name
 
@@ -104,4 +117,3 @@ class MongoPipeline:
         self.collection.insert_one(dict(item))  # Directly insert the cleaned item
         spider.logger.info(f"Inserted item: {item['name']}")
         return item
-
