@@ -23,6 +23,7 @@ class PhonescraperPipeline:
             if "iPhone" in name:
                 # Remove storage and color details from the name
                 name = re.sub(r"\d+GB\s*", "", name)  # Remove storage (e.g., 128GB)
+                name = re.sub(r"\s*\(.*?\)", "", name)  # Remove brackets and their contents
                 name = re.sub(r"\s*(Black|Blue|Natural Titanium|Red|Green|etc\.?)\s*", "", name, flags=re.IGNORECASE)  # Remove colors
                 name = name.strip()
             else:
