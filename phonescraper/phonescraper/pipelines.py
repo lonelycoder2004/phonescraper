@@ -12,16 +12,13 @@ class PhonescraperPipeline:
         adapter = ItemAdapter(item)
 
         # Remove phones missing any required fields
-        required_fields = ["name", "price", "specifications", "product_url"]
+        required_fields = ["name", "price", "specifications","product_url"]
         for field in required_fields:
             if not adapter.get(field):  # Skip if any required field is missing
                 raise DropItem(f"Missing required field: {field} in {item}")
 
-        # Store the original name for duplicate checking
-        original_name = adapter.get("name")
-
         # Clean and format the name field (remove color and storage details for iPhones)
-        name = original_name
+        name = adapter.get("name")
         if name:
             if "iPhone" in name:
                 # Remove storage and color details from the name
@@ -34,11 +31,11 @@ class PhonescraperPipeline:
                 name = re.sub(r"\s*\(.*?\)", "", name).strip()
             adapter["name"] = name
 
-            # Check if this name has already been seen using the original name
-            if original_name in self.seen_names:
-                raise DropItem(f"Duplicate phone name found: {original_name}, ignoring.")
+            # Check if this name has already been seen
+            if name in self.seen_names:
+                raise DropItem(f"Duplicate phone name found: {name}, ignoring.")
             else:
-                self.seen_names.add(original_name)  # Add new name to the set
+                self.seen_names.add(name)  # Add new name to the set
 
         # Check that all required specifications are present
         required_specs = [
@@ -66,9 +63,7 @@ class PhonescraperPipeline:
                 if key == 'Primary Camera' or key == 'Secondary Camera':
                     value = re.sub(r'Features?.*', '', value).strip()
 
-                # Simplify processor name if it starts with "Snapdragon"
-                if key == 'Processor' and value.startswith("Snapdragon"):
-                    value = "Snapdragon"
+                
 
                 if key in required_specs:
                     cleaned_specs[key] = value
