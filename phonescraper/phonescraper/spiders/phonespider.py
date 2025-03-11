@@ -26,6 +26,7 @@ class PhonespiderSpider(scrapy.Spider):
         name = response.css("span.base::text").get()
         price = response.css("span.price::text").get()
         image = response.css("div.gallery-placeholder img::attr(src)").get()
+        product_url = response.url  # Get the full URL of the product page
         
         # Extracting specifications from the additional attributes table
         specs = {}
@@ -48,6 +49,7 @@ class PhonespiderSpider(scrapy.Spider):
         phone_item["price"] = price
         phone_item["image"] = image
         phone_item["specifications"] = specs  # Store all specifications
+        phone_item["product_url"] = product_url  # Add the product URL
         
         # Yield the phone item with all specifications
         yield phone_item
