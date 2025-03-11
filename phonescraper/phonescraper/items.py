@@ -12,3 +12,4 @@ class PhonescraperItem(scrapy.Item):
     price = scrapy.Field()
     image = scrapy.Field()
     specifications = scrapy.Field()
+    product_url = scrapy.Field()
