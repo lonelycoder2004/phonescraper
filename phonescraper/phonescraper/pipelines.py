@@ -63,10 +63,6 @@ class PhonescraperPipeline:
                 if key == 'Primary Camera' or key == 'Secondary Camera':
                     value = re.sub(r'Features?.*', '', value).strip()
 
-                # Simplify processor name if it starts with "Snapdragon"
-                if key == 'Processor' and value.startswith("Snapdragon"):
-                    value = "Snapdragon"
-
                 if key in required_specs:
                     cleaned_specs[key] = value
             
