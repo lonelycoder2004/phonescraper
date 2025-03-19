@@ -8,7 +8,7 @@ import requests
 class PhonescraperPipeline:
     def __init__(self):
         self.seen_names = set()  # To track unique phone names
-        self.youtube_api_key = 'AIzaSyCOHIcVU4BPtdsKm230y3hbgC6p5HC3bGs'  # Replace with your actual YouTube API key
+        self.youtube_api_key = 'AIzaSyA-m27We_ZKLJWWUw16dEdydulKtYRqpSU'  # Replace with your actual YouTube API key
 
     def fetch_top_video(self, phone_name, channel_id=None):
         """Fetch the top video for a given phone name from YouTube."""
