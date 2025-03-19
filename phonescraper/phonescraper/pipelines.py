@@ -8,7 +8,12 @@ import requests
 class PhonescraperPipeline:
     def __init__(self):
         self.seen_names = set()  # To track unique phone names
-        self.youtube_api_key = 'AIzaSyA-m27We_ZKLJWWUw16dEdydulKtYRqpSU'  # Replace with your actual YouTube API key
+        self.youtube_api_keys = [
+            'AIzaSyDpqT3epjFtgUhvIRghtPJRvXWrIspKRQA',
+            'AIzaSyBDnBtqnhOaqhctrl3ACti2hU4Ys1OdXDM',
+            'AIzaSyD3CN6fVVskaduf8lfLgn-jLH2D0qWApfo' 
+        ]
+        self.current_api_key_index = 0  # Start with the first API key
 
     def fetch_top_video(self, phone_name, channel_id=None):
         """Fetch the top video for a given phone name from YouTube."""
@@ -18,7 +23,7 @@ class PhonescraperPipeline:
             'q': f'"{phone_name} review unboxing"',
             'type': 'video',
             'order': 'relevance',
-            'key': self.youtube_api_key,
+            'key': self.youtube_api_keys[self.current_api_key_index],  # Use current API key
             'videoDuration': 'medium',
             'relevanceLanguage': 'en',
             'regionCode': 'US',
@@ -33,6 +38,10 @@ class PhonescraperPipeline:
     def process_response(self, response, phone_name):
         """Process the YouTube API response to find the most relevant video."""
         if response.status_code != 200:
+            # If the API key quota is exhausted, switch to the next key
+            if response.status_code == 403 and "quotaExceeded" in response.text:
+                self.current_api_key_index = (self.current_api_key_index + 1) % len(self.youtube_api_keys)
+                return None
             return None
 
         data = response.json()
@@ -184,4 +193,4 @@ class MongoPipeline:
         """Insert the scraped item into MongoDB Atlas"""
         self.collection.insert_one(dict(item))  # Directly insert the cleaned item
         spider.logger.info(f"Inserted item: {item['name']}")
-        return item         
+        return item
