@@ -3,16 +3,81 @@ import re
 import pymongo
 from scrapy.exceptions import DropItem
 import os
+import requests
 
 class PhonescraperPipeline:
     def __init__(self):
         self.seen_names = set()  # To track unique phone names
+        self.youtube_api_key = 'AIzaSyCOHIcVU4BPtdsKm230y3hbgC6p5HC3bGs'  # Replace with your actual YouTube API key
+
+    def fetch_top_video(self, phone_name, channel_id=None):
+        """Fetch the top video for a given phone name from YouTube."""
+        url = 'https://www.googleapis.com/youtube/v3/search'
+        params = {
+            'part': 'snippet',
+            'q': f'"{phone_name} review unboxing"',
+            'type': 'video',
+            'order': 'relevance',
+            'key': self.youtube_api_key,
+            'videoDuration': 'medium',
+            'relevanceLanguage': 'en',
+            'regionCode': 'US',
+            'maxResults': 5
+        }
+        if channel_id:
+            params['channelId'] = channel_id
+
+        response = requests.get(url, params=params)
+        return response
+
+    def process_response(self, response, phone_name):
+        """Process the YouTube API response to find the most relevant video."""
+        if response.status_code != 200:
+            return None
+
+        data = response.json()
+        if not data.get('items'):
+            return None
+
+        phone_name_lower = phone_name.lower()
+        for item in data['items']:
+            title_lower = item['snippet']['title'].lower()
+
+            if f" {phone_name_lower} " in f" {title_lower} ":
+                return f'https://www.youtube.com/watch?v={item["id"]["videoId"]}'
+
+        return None
+
+    def get_youtube_link(self, phone_name):
+        """Get the top YouTube video link for a given phone name."""
+        video_url = None
+
+        # Preferred YouTube channels for reviews
+        preferred_channels = {
+            "MKBHD": "UCBJycsmduvYEL83R_U4JriQ",
+            "MrWhoseTheBoss": "UCMiJRAwDNSNzuYeN2uWa0pA",
+            "Unbox Therapy": "UCsTcErHg8oDvUnTzoqsYeNw",
+            "Dave2D": "UCVYamHliCI9rw1tHR1xbkfw",
+            "Linus Tech Tips": "UCXuqSBlHAE6Xw-yeJA0Tunw"
+        }
+
+        for channel_id in preferred_channels.values():
+            response = self.fetch_top_video(phone_name, channel_id)
+            video_url = self.process_response(response, phone_name)
+            if video_url:
+                break
+
+        if not video_url:
+            response = self.fetch_top_video(phone_name)
+            video_url = self.process_response(response, phone_name)
+
+        return video_url
 
     def process_item(self, item, spider):
         adapter = ItemAdapter(item)
 
         # Remove phones missing any required fields
-        required_fields = ["name", "price", "specifications","product_url"]
+        required_fields = ["name", "price", "specifications", "product_url"]
         for field in required_fields:
             if not adapter.get(field):  # Skip if any required field is missing
                 raise DropItem(f"Missing required field: {field} in {item}")
@@ -63,8 +128,6 @@ class PhonescraperPipeline:
                 if key == 'Primary Camera' or key == 'Secondary Camera':
                     value = re.sub(r'Features?.*', '', value).strip()
 
-                
-
                 if key in required_specs:
                     cleaned_specs[key] = value
             
@@ -86,6 +149,10 @@ class PhonescraperPipeline:
         image = adapter.get("image")
         if image:
             adapter["image"] = image.strip()
+
+        # Fetch and add YouTube video link as a key-value pair
+        youtube_link = self.get_youtube_link(name)
+        adapter["youtube_link"] = youtube_link if youtube_link else "No relevant videos found."
 
         return item
 
@@ -115,4 +182,4 @@ class MongoPipeline:
         """Insert the scraped item into MongoDB Atlas"""
         self.collection.insert_one(dict(item))  # Directly insert the cleaned item
         spider.logger.info(f"Inserted item: {item['name']}")
-        return item
+        return item         

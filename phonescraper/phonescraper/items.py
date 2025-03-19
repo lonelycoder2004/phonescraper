@@ -13,3 +13,4 @@ class PhonescraperItem(scrapy.Item):
     image = scrapy.Field()
     specifications = scrapy.Field()
     product_url = scrapy.Field()
+    youtube_link=scrapy.Field()
