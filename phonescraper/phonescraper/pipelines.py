@@ -82,18 +82,20 @@ class PhonescraperPipeline:
             if not adapter.get(field):  # Skip if any required field is missing
                 raise DropItem(f"Missing required field: {field} in {item}")
 
-        # Clean and format the name field (remove color and storage details for iPhones)
+        # Clean and format the name field
         name = adapter.get("name")
         if name:
+            # Remove common additional descriptors like "With Charger"
+            name = re.sub(r"\s*With\s+Charger\s*", "", name, flags=re.IGNORECASE)
+            name = re.sub(r"\s*\(.*?\)", "", name)  # Remove brackets and their contents
+            name = re.sub(r"\s*\[.*?\]", "", name)  # Remove square brackets and their contents
+            name = name.strip()
+
+            # For iPhones, remove storage and color details
             if "iPhone" in name:
-                # Remove storage and color details from the name
                 name = re.sub(r"\d+GB\s*", "", name)  # Remove storage (e.g., 128GB)
-                name = re.sub(r"\s*\(.*?\)", "", name)  # Remove brackets and their contents
                 name = re.sub(r"\s*(Black|Blue|Natural Titanium|Red|Green|etc\.?)\s*", "", name, flags=re.IGNORECASE)  # Remove colors
-                name = name.strip()
-            else:
-                # For non-iPhones, just remove bracketed parts
-                name = re.sub(r"\s*\(.*?\)", "", name).strip()
+
             adapter["name"] = name
 
             # Check if this name has already been seen
