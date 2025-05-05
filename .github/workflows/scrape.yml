@@ -2,7 +2,7 @@ name: Scheduled Scrapy Spider
 
 on:
   schedule:
-    - cron: "0 0 25 * *"  
+    - cron: "0 0 1 * *"  
   workflow_dispatch:  # Allows manual trigger
 
 jobs:
